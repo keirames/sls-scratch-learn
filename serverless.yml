@@ -1,0 +1,200 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: test-js
+# app and org for use with dashboard.serverless.com
+#app: your-app-name
+#org: your-org-name
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+frameworkVersion: "3"
+
+plugins:
+  - "serverless-appsync-plugin"
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  stage: dev
+  region: ap-southeast-1
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:PutItem"
+            - "dynamodb:UpdateItem"
+            - "dynamodb:DeleteItem"
+            - "dynamodb:GetItem"
+            - "dynamodb:Scan"
+          Resource: "arn:aws:dynamodb:${aws:region}:*:table/${self:custom.TASKS_TABLE}"
+#  iam:
+#    role:
+#      statements:
+#        - Effect: "Allow"
+#          Action:
+#            - "s3:ListBucket"
+#          Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
+#        - Effect: "Allow"
+#          Action:
+#            - "s3:PutObject"
+#          Resource:
+#            Fn::Join:
+#              - ""
+#              - - "arn:aws:s3:::"
+#                - "Ref" : "ServerlessDeploymentBucket"
+#                - "/*"
+custom:
+  TASKS_TABLE: tasks
+
+  appSync:
+    name: tasks-exec-sls
+    authenticationType: API_KEY
+    mappingTemplates:
+      - type: Mutation
+        field: createTask
+        dataSource: createTaskFunction
+        request: false
+        response: false
+      # - type: Mutation
+      #   field: updateTask
+      #   dataSource: updateTaskFunction
+      #   request: false
+      #   response: false
+      # - type: Mutation
+      #   field: deleteTask
+      #   dataSource: deleteTaskFunction
+      #   request: false
+      #   response: false
+      - type: Query
+        field: getTasks
+        dataSource: getTasksFunction
+        request: false
+        response: false
+    dataSources:
+      - type: AWS_LAMBDA
+        name: createTaskFunction
+        config:
+          functionName: createTask
+
+      # - type: AWS_LAMBDA
+      #   name: updateTaskFunction
+      #   config:
+      #     functionName: updateTask
+
+      # - type: AWS_LAMBDA
+      #   name: deleteTaskFunction
+      #   config:
+      #     functionName: deleteTask
+
+      - type: AWS_LAMBDA
+        name: getTasksFunction
+        config:
+          functionName: getTasks
+
+# you can define service wide environment variables here
+#  environment:
+#    variable1: value1
+
+# you can add packaging information here
+#package:
+#  patterns:
+#    - '!exclude-me.js'
+#    - '!exclude-me-dir/**'
+#    - include-me.js
+#    - include-me-dir/**
+
+functions:
+  getTasks:
+    handler: functions/getTasks.handler
+    environment:
+      TASKS_TABLE_NAME: !Ref TasksTable
+
+  createTask:
+    handler: functions/createTask.handler
+    environment:
+      TASKS_TABLE_NAME: !Ref TasksTable
+
+  # updateTask:
+  #   handler: functions/updateTask.handler
+  #   environment:
+  #     TASKS_TABLE_NAME: !Ref TasksTable
+
+  # deleteTask:
+  #   handler: functions/deleteTask.handler
+  #   environment:
+  #     TASKS_TABLE_NAME: !Ref TasksTable
+
+#    The following are a few example events you can configure
+#    NOTE: Please make sure to change your handler code to work with those events
+#    Check the event documentation for details
+#    events:
+#      - httpApi:
+#          path: /users/create
+#          method: get
+#      - websocket: $connect
+#      - s3: ${env:BUCKET}
+#      - schedule: rate(10 minutes)
+#      - sns: greeter-topic
+#      - stream: arn:aws:dynamodb:region:XXXXXX:table/foo/stream/1970-01-01T00:00:00.000
+#      - alexaSkill: amzn1.ask.skill.xx-xx-xx-xx
+#      - alexaSmartHome: amzn1.ask.skill.xx-xx-xx-xx
+#      - iot:
+#          sql: "SELECT * FROM 'some_topic'"
+#      - cloudwatchEvent:
+#          event:
+#            source:
+#              - "aws.ec2"
+#            detail-type:
+#              - "EC2 Instance State-change Notification"
+#            detail:
+#              state:
+#                - pending
+#      - cloudwatchLog: '/aws/lambda/hello'
+#      - cognitoUserPool:
+#          pool: MyUserPool
+#          trigger: PreSignUp
+#      - alb:
+#          listenerArn: arn:aws:elasticloadbalancing:us-east-1:XXXXXX:listener/app/my-load-balancer/50dc6c495c0c9188/
+#          priority: 1
+#          conditions:
+#            host: example.com
+#            path: /hello
+
+#    Define function environment variables here
+#    environment:
+#      variable2: value2
+
+# you can add CloudFormation resource templates here
+resources:
+  Resources:
+    TasksTable:
+      Type: "AWS::DynamoDB::Table"
+      Properties:
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:custom.TASKS_TABLE}
+#    NewResource:
+#      Type: AWS::S3::Bucket
+#      Properties:
+#        BucketName: my-new-bucket
+#  Outputs:
+#     NewOutput:
+#       Description: "Description for the output"
+#       Value: "Some output value"

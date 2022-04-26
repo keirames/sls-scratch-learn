@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "aws-sdk": "^2.1121.0",
+    "serverless-appsync-plugin": "^1.13.0"
+  }
+}
